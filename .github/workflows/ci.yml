@@ -1,0 +1,37 @@
+name: Validate platform
+on: [push, pull_request, workflow_dispatch]
+permissions:
+  contents: read
+jobs:
+  python:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+      - run: pip install -e '.[dev]'
+      - run: ruff check src tests scripts --select E9,F63,F7,F82
+      - run: pytest -q
+      - run: python -m clearflow.cli demo --count 100
+      - run: docker compose config --quiet
+  integration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker compose up -d --build processor
+      - run: docker compose run --rm producer python -m clearflow.cli produce --count 20 --interval 0.02 --output /app/data/reference.csv
+      - run: docker compose run --rm dashboard python scripts/integration_check.py
+      - name: Restart processor and verify durable state
+        run: |
+          docker compose restart processor
+          docker compose run --rm producer python -m clearflow.cli produce --count 20 --interval 0.02 --output /app/data/reference-next.csv
+          docker compose run --rm dashboard python scripts/integration_check.py --reference /app/data/reference.csv --reference /app/data/reference-next.csv --expected 40
+      - name: Logs
+        if: always()
+        run: docker compose logs --no-color --tail=150 processor kafka postgres
+      - name: Cleanup
+        if: always()
+        run: docker compose down -v

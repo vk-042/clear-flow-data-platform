@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "clearflow-data-platform"
+version = "1.0.1"
+description = "Real-time banking payments and healthcare claims data engineering platform"
+requires-python = ">=3.10,<3.13"
+dependencies = [
+ "SQLAlchemy==2.0.43", "pydantic==2.11.9", "numpy==2.2.6",
+ "scikit-learn==1.7.2", "psycopg[binary]==3.2.10",
+ "kafka-python==2.2.15", "streamlit==1.49.1", "pandas==2.3.2", "plotly==6.3.0"
+]
+[project.optional-dependencies]
+dev = ["pytest==8.4.2", "ruff==0.13.1"]
+spark = ["pyspark==3.5.6"]
+[project.scripts]
+clearflow = "clearflow.cli:main"
+[tool.setuptools.packages.find]
+where = ["src"]
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+[tool.ruff]
+line-length = 110

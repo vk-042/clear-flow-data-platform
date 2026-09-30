@@ -1,0 +1,120 @@
+x-app: &app
+  image: clearflow-local:1.0.1
+  build: .
+  environment: &app-env
+    DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg://clearflow:clearflow_local_demo@postgres:5432/clearflow}
+    KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+  volumes:
+    - app-data:/app/data
+  depends_on:
+    postgres:
+      condition: service_healthy
+    kafka-init:
+      condition: service_completed_successfully
+
+services:
+  kafka:
+    image: apache/kafka:3.9.1
+    hostname: kafka
+    ports:
+      - "127.0.0.1:9092:19092"
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_LISTENERS: INTERNAL://:9092,EXTERNAL://:19092,CONTROLLER://:9093
+      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka:9092,EXTERNAL://localhost:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT,CONTROLLER:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "false"
+      KAFKA_LOG_DIRS: /var/lib/kafka/data
+      CLUSTER_ID: MkU3OEVBNTcwNTJENDM2Qk
+    volumes:
+      - kafka-data:/var/lib/kafka/data
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --list >/dev/null 2>&1"]
+      interval: 10s
+      timeout: 10s
+      retries: 20
+  kafka-init:
+    image: apache/kafka:3.9.1
+    depends_on:
+      kafka:
+        condition: service_healthy
+    entrypoint: ["/bin/bash", "-ec"]
+    command:
+      - |
+        /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --create --if-not-exists --topic banking.events.v1 --partitions 3 --replication-factor 1
+        /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --create --if-not-exists --topic healthcare.events.v1 --partitions 3 --replication-factor 1
+  postgres:
+    image: postgres:16.10-bookworm
+    environment:
+      POSTGRES_USER: clearflow
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-clearflow_local_demo}
+      POSTGRES_DB: clearflow
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U clearflow -d clearflow"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+  db-init:
+    <<: *app
+    command: ["python", "-m", "clearflow.cli", "stats"]
+  processor:
+    <<: *app
+    depends_on:
+      db-init:
+        condition: service_completed_successfully
+    command:
+      - spark-submit
+      - --master
+      - local[2]
+      - --conf
+      - spark.driver.memory=1g
+      - --packages
+      - org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.6,org.apache.iceberg:iceberg-spark-runtime-3.5_2.12:1.8.1,org.apache.iceberg:iceberg-aws-bundle:1.8.1
+      - /app/src/clearflow/streaming.py
+    restart: unless-stopped
+  producer:
+    <<: *app
+    command: ["python", "-m", "clearflow.cli", "produce", "--interval", "0.5"]
+    profiles: ["live"]
+  dashboard:
+    <<: *app
+    depends_on:
+      db-init:
+        condition: service_completed_successfully
+    ports:
+      - "127.0.0.1:8501:8501"
+    command: ["python", "-m", "streamlit", "run", "src/clearflow/dashboard.py", "--server.address=0.0.0.0", "--server.port=8501"]
+  airflow:
+    build:
+      context: .
+      dockerfile: airflow/Dockerfile
+    profiles: ["orchestration"]
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg://clearflow:clearflow_local_demo@postgres:5432/clearflow}
+      AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+      AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: "true"
+      REFERENCE_PATH: /app/data/reference.csv
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: sqlite:////opt/airflow/airflow.db
+    volumes:
+      - app-data:/app/data:ro
+      - airflow-data:/opt/airflow
+    ports:
+      - "127.0.0.1:8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: standalone
+volumes:
+  kafka-data:
+  postgres-data:
+  app-data:
+  airflow-data:

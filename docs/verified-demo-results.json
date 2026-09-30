@@ -1,0 +1,37 @@
+{
+  "demo --count 100 --output data/verified": {
+    "records": 312,
+    "outcomes": {
+      "accepted": 287,
+      "duplicate": 15,
+      "quarantined": 10
+    },
+    "elapsed_seconds": 1.328,
+    "reconciliation": {
+      "run_id": "e3ae502bce1148afa163d3c33c8e7c79",
+      "created_at": "2026-09-25T16:07:08.611318+00:00",
+      "expected_count": 100,
+      "internal_count": 100,
+      "matched": 100,
+      "issues": []
+    }
+  },
+  "stats": {
+    "raw_records": 609,
+    "events": 287,
+    "entities": 100
+  },
+  "replay data/verified/events.jsonl": {
+    "duplicate": 287,
+    "replayed": 15,
+    "quarantined": 10
+  },
+  "reconcile data/verified/reference.csv": {
+    "run_id": "c373e3ed0ca04275a5bf6ed044a3f5ed",
+    "created_at": "2026-09-25T16:07:15.019591+00:00",
+    "expected_count": 100,
+    "internal_count": 100,
+    "matched": 100,
+    "issues": []
+  }
+}

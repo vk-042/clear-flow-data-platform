@@ -1,0 +1,28 @@
+{
+  "date": "2026-09-25",
+  "python": "3.12.14",
+  "java": "OpenJDK 17.0.20",
+  "spark": "3.5.6",
+  "kafka": "3.9.1",
+  "iceberg": "1.8.1",
+  "airflow": "2.10.5",
+  "spark_master": "local[2]",
+  "spark_driver_memory": "1g",
+  "serving_database": "SQLite",
+  "unit_and_dashboard_tests": {
+    "passed": 22,
+    "seconds": 9.39
+  },
+  "airflow_dag_test": {
+    "status": "success",
+    "matched": 370,
+    "mode": "airflow dags test; SQLite metadata and serving stores"
+  },
+  "remaining_unverified": [
+    "Docker Compose deployment",
+    "PostgreSQL path",
+    "AWS S3/REST catalog",
+    "scheduled Airflow service operation"
+  ],
+  "latency_limit": "Single synthetic burst after warmup, not sustained throughput or a capacity maximum"
+}

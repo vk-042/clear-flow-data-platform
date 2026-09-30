@@ -1,0 +1,14 @@
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+.venv/
+.env
+data/
+*.db
+*.db-*
+warehouse/
+checkpoints/
+.airflow/
+.DS_Store

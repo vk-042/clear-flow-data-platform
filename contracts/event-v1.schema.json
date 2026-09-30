@@ -1,0 +1,80 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": 1,
+      "title": "Schema Version",
+      "type": "integer"
+    },
+    "event_id": {
+      "pattern": "^[a-zA-Z0-9_-]{1,100}$",
+      "title": "Event Id",
+      "type": "string"
+    },
+    "domain": {
+      "enum": [
+        "banking",
+        "healthcare"
+      ],
+      "title": "Domain",
+      "type": "string"
+    },
+    "entity_id": {
+      "pattern": "^[a-zA-Z0-9_-]{1,100}$",
+      "title": "Entity Id",
+      "type": "string"
+    },
+    "party_id": {
+      "pattern": "^SYN-[a-zA-Z0-9_-]{1,80}$",
+      "title": "Party Id",
+      "type": "string"
+    },
+    "source_system": {
+      "enum": [
+        "synthetic-bank",
+        "synthetic-claims"
+      ],
+      "title": "Source System",
+      "type": "string"
+    },
+    "sequence": {
+      "maximum": 10000,
+      "minimum": 1,
+      "title": "Sequence",
+      "type": "integer"
+    },
+    "status": {
+      "title": "Status",
+      "type": "string"
+    },
+    "amount": {
+      "title": "Amount",
+      "type": "string"
+    },
+    "currency": {
+      "const": "USD",
+      "title": "Currency",
+      "type": "string"
+    },
+    "event_time": {
+      "format": "date-time",
+      "title": "Event Time",
+      "type": "string"
+    }
+  },
+  "required": [
+    "schema_version",
+    "event_id",
+    "domain",
+    "entity_id",
+    "party_id",
+    "source_system",
+    "sequence",
+    "status",
+    "amount",
+    "currency",
+    "event_time"
+  ],
+  "title": "Event",
+  "type": "object"
+}
