@@ -3,7 +3,9 @@
 **Date:** September 25, 2026. **Result:** Passed correctness and recovery checks.
 **Scope:** Real Kafka 3.9.1, Spark 3.5.6, Iceberg 1.8.1, and the project's Python processor,
 using SQLite as the serving database. Airflow 2.10.5 DAG task was tested separately.
-Docker, PostgreSQL, cloud deployment, and live Airflow scheduling remain unverified.
+Docker and PostgreSQL were unverified in this native experiment; subsequent container
+acceptance passed on September 30 (see [Validation](VALIDATION.md)). Cloud deployment
+and live Airflow scheduling remain unverified.
 
 ## Measured burst after warmup
 

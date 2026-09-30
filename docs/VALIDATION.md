@@ -14,7 +14,7 @@ Executed in the authoring workspace on 2026-09-25, using Python 3.12.14.
 | SQLite database integrity after replay | ok |
 | Dashboard test | Banking and healthcare rendered without exceptions |
 | Native Kafka → Spark → Iceberg + SQLite | Passed, including recovery and lake counts |
-| Docker Compose + PostgreSQL acceptance | Not executed: container runtime unavailable |
+| Docker Compose + PostgreSQL acceptance | Passed in GitHub Actions on 2026-09-30; 20 entities, then 40 after restart |
 | Airflow DAG task execution | Passed via `airflow dags test`, 370 matched; SQLite |
 | AWS S3/REST catalog | Not provisioned or tested |
 | Native synthetic burst | 74.54 unique events/s; P95 10.71 s; 10-second target missed |
@@ -52,14 +52,26 @@ The final run reconciled all 370 entities after forced stop/backlog/restart and 
 redelivery. Iceberg bronze, silver and gold counts matched the serving store.
 Airflow's actual DAG task subsequently reconciled all 370 entities successfully.
 
-## Remaining release gate
+## Container acceptance completed
 
-Run the full container acceptance workflow in GitHub Actions or on a Docker host.
-It produces a finite fixture, verifies both domains, restarts the processor, produces
-another fixture, and verifies all 40 entities. Dependency installation, JVM connector
-resolution, image startup, mounted-volume permissions, and checkpoint recovery in the Docker/PostgreSQL configuration
-remain unverified until that workflow passes. Do not describe the stack as production
-ready or full-stack tested before then.
+[GitHub Actions run 36792768299](https://github.com/vk-042/clear-flow-data-platform/actions/runs/36792768299)
+passed on 2026-09-30 for commit `5641ca8cd4d2b46cdc47f803e85d7841ddc4d203`.
+The Python job passed all 22 tests in 11.89 seconds, critical Ruff checks, the
+100-entity demo, and Docker Compose configuration validation.
+
+The integration job built the application image, started Kafka, PostgreSQL and
+Spark, and reconciled all 20 entities from the first synthetic fixture. It then
+restarted the processor using the persisted checkpoint and volumes, produced
+another fixture, and reconciled all 40 entities with zero findings. The job logs
+contain `PASS: 20 entities match Kafka reference snapshot` and
+`PASS: 40 entities match Kafka reference snapshot`.
+
+This verifies container startup, connector resolution, mounted-volume access,
+SQL ingestion, reconciliation and processor restart for a small fixture. It does
+not measure PostgreSQL throughput, verify every Iceberg table in the container,
+exercise an in-flight commit failure, or test the Airflow container, dashboard
+browser, cloud deployment or production security. Native lakehouse counts and
+latency measurements remain the separate experiment documented in `NATIVE_RESULTS.md`.
 
 ## Publication review
 
@@ -67,5 +79,4 @@ The Python suite passed again: 22 tests in 9.82 seconds; critical Ruff checks pa
 A credential-pattern scan found no private keys or recognized token patterns. Compose
 now runs a single database-initialization service before processor/dashboard startup,
 removing their concurrent schema-creation race. The integration wait now allows five
-minutes for first-start connector downloads. These container startup changes still
-need GitHub Actions verification; they are not described as already runtime tested.
+minutes for first-start connector downloads. These container startup changes passed the GitHub Actions acceptance run above.
